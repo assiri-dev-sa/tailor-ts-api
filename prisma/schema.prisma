@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id           Int           @id @default(autoincrement())
+  name         String
+  phone        String?       @unique
+  notes        String?
+  createdAt    DateTime      @default(now())
+  measurements Measurement[]
+  orders       Order[]
+}
+
+model Measurement {
+  id         Int      @id @default(autoincrement())
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId Int
+  label      String?
+  height     Float?
+  shoulder   Float?
+  chest      Float?
+  waist      Float?
+  sleeve     Float?
+  wrist      Float?
+  neck       Float?
+  hip        Float?
+  notes      String?
+  createdAt  DateTime @default(now())
+  orders     Order[]
+}
+
+model Order {
+  id             Int          @id @default(autoincrement())
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  customerId     Int
+  measurement    Measurement? @relation(fields: [measurementId], references: [id])
+  measurementId  Int?
+  fabricType     String?
+  priceBeforeVat Float
+  vatAmount      Float
+  totalAmount    Float
+  deliveryDate   DateTime?
+  status         String       @default("NEW") // NEW, IN_PROGRESS, READY, DELIVERED, CANCELED
+  notes          String?
+  createdAt      DateTime     @default(now())
+  invoice        Invoice?
+}
+
+model Invoice {
+  id           Int       @id @default(autoincrement())
+  order        Order     @relation(fields: [orderId], references: [id])
+  orderId      Int       @unique
+  internalCode String    @unique
+  issueDate    DateTime  @default(now())
+  subtotal     Float
+  vatAmount    Float
+  totalAmount  Float
+
+  // 🔹 تجهيز للزكاة والدخل (ZATCA-ready)
+  invoiceType String    @default("SIMPLIFIED")  // SIMPLIFIED or STANDARD
+  vatCategory String    @default("STANDARD_15") // خاضعة 15%
+  currency    String    @default("SAR")
+
+  eInvoice    EInvoice?
+}
+
+model EInvoice {
+  id              Int      @id @default(autoincrement())
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id])
+  invoiceId       Int      @unique
+  uuid            String?  @unique
+  xmlUrl          String?
+  pdfUrl          String?
+  qrData          String?
+  providerStatus  String?
+  providerRawResp String?
+  createdAt       DateTime @default(now())
+}
+
+model ShopSettings {
+  id        Int      @id @default(1)
+  name      String
+  crNumber  String?
+  vatNumber String?
+  address   String?
+  phone     String?
+  city      String?
+  country   String? @default("Saudi Arabia")
+  updatedAt DateTime @updatedAt
+}
